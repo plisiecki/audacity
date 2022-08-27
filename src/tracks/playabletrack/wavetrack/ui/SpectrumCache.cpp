@@ -536,16 +536,30 @@ bool WaveClipSpectrumCache::GetSpectrogram(const WaveClip &clip,
       ));
    }
 
-   // Resize the cache, keep the contents unchanged.
-   mSpecCache->Grow(numPixels, settings, pixelsPerSecond, t0);
-   mSpecCache->leftTrim = clip.GetTrimLeft();
-   mSpecCache->rightTrim = clip.GetTrimRight();
    auto nBins = settings.NBins();
 
    // Optimization: if the old cache is good and overlaps
    // with the current one, re-use as much of the cache as
-   // possible
-   if (copyEnd > copyBegin)
+   // possible.  Case 1: When moving to earlier part of
+   // the cache, move before possibly shrinking freq[].
+   if (copyEnd > copyBegin && oldX0 > 0)
+   {
+      // memmove is required since dst/src overlap
+      memmove(&mSpecCache->freq[nBins * copyBegin],
+         &mSpecCache->freq[nBins * (copyBegin + oldX0)],
+         nBins * (copyEnd - copyBegin) * sizeof(float));
+   }
+
+   // Resize the cache, keep the contents unchanged.
+   mSpecCache->Grow(numPixels, settings, pixelsPerSecond, t0);
+   mSpecCache->leftTrim = clip.GetTrimLeft();
+   mSpecCache->rightTrim = clip.GetTrimRight();
+
+   // Optimization: if the old cache is good and overlaps
+   // with the current one, re-use as much of the cache as
+   // possible  Case 2: When moving to later part of
+   // the cache, move after possibly growing freq[].
+   if (copyEnd > copyBegin && oldX0 <= 0)
    {
       // memmove is required since dst/src overlap
       memmove(&mSpecCache->freq[nBins * copyBegin],
