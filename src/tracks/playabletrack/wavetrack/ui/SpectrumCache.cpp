@@ -559,7 +559,10 @@ bool WaveClipSpectrumCache::GetSpectrogram(const WaveClip &clip,
    // with the current one, re-use as much of the cache as
    // possible  Case 2: When moving to later part of
    // the cache, move after possibly growing freq[].
-   if (copyEnd > copyBegin && oldX0 <= 0)
+   // Note that if oldX0 happens to be 0, just skip memmove
+   // altogether since the source and destination addresses
+   // would be the same.
+   if (copyEnd > copyBegin && oldX0 < 0)
    {
       // memmove is required since dst/src overlap
       memmove(&mSpecCache->freq[nBins * copyBegin],
