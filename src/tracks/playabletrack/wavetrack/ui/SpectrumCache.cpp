@@ -537,10 +537,9 @@ bool WaveClipSpectrumCache::GetSpectrogram(const WaveClip &clip,
    }
 
    // Resize the cache, keep the contents unchanged.
-   mSpecCache->Grow(numPixels, settings, pixelsPerSecond, t0);
-   mSpecCache->leftTrim = clip.GetTrimLeft();
-   mSpecCache->rightTrim = clip.GetTrimRight();
    auto nBins = settings.NBins();
+   if (numPixels > mSpecCache->len)
+      mSpecCache->Grow(numPixels, settings, pixelsPerSecond, t0);
 
    // Optimization: if the old cache is good and overlaps
    // with the current one, re-use as much of the cache as
@@ -552,6 +551,12 @@ bool WaveClipSpectrumCache::GetSpectrogram(const WaveClip &clip,
                &mSpecCache->freq[nBins * (copyBegin + oldX0)],
                nBins * (copyEnd - copyBegin) * sizeof(float));
    }
+
+   if (numPixels < mSpecCache->len)
+      mSpecCache->Grow(numPixels, settings, pixelsPerSecond, t0);
+
+   mSpecCache->leftTrim = clip.GetTrimLeft();
+   mSpecCache->rightTrim = clip.GetTrimRight();
 
    // Reassignment accumulates, so it needs a zeroed buffer
    if (settings.algorithm == SpectrogramSettings::algReassignment)
